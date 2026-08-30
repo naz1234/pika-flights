@@ -23,8 +23,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+
+type AppTab = "flights" | "packing" | "baggage";
 
 type Flight = {
   id: string;
@@ -157,7 +158,16 @@ function normalizePlan(data: StoredPlan): PlanState {
 }
 
 const fieldClass =
-  "h-11 rounded-2xl border-[#cdeafa] bg-white/95 text-[#153454] shadow-[0_4px_14px_rgba(29,143,202,0.06)] placeholder:text-[#7ca5bd] focus-visible:border-[#45bce9] focus-visible:ring-[#9ce4fb]";
+  "h-12 rounded-[14px] border-[#ccdcd4] bg-[#fcfefd] px-3 text-base text-[#17344f] shadow-none placeholder:text-[#879790] focus-visible:border-[#b398db] focus-visible:ring-[#b398db]/25";
+
+const surfaceClass =
+  "rounded-[24px] border border-[#dfe9e6] bg-white p-4 shadow-[0_10px_26px_rgba(40,91,78,0.07),0_2px_5px_rgba(113,48,108,0.025)] sm:p-5";
+
+const primaryButtonClass =
+  "h-12 rounded-2xl bg-gradient-to-br from-[#117d67] to-[#086553] font-bold text-white shadow-[0_7px_16px_rgba(17,125,103,0.17)] transition-[background-color,box-shadow] duration-200 hover:shadow-[0_9px_20px_rgba(17,125,103,0.26)]";
+
+const secondaryButtonClass =
+  "h-12 rounded-2xl border border-[#d9c7e9] bg-[#f1e7fa] font-bold text-[#71306c] shadow-none transition-colors duration-200 hover:bg-[#e7d5f6]";
 
 function Field({
   label,
@@ -169,7 +179,7 @@ function Field({
   className?: string;
 }) {
   return (
-    <label className={`grid min-w-0 max-w-full gap-1.5 text-xs font-bold text-[#52738b] ${className}`}>
+    <label className={`grid min-w-0 max-w-full gap-1.5 text-xs font-bold text-[#5d6b79] ${className}`}>
       <span>{label}</span>
       {children}
     </label>
@@ -177,6 +187,7 @@ function Field({
 }
 
 export default function Home() {
+  const [tab, setTab] = useState<AppTab>("flights");
   const [plan, setPlan] = useState<PlanState>(defaultState);
   const [loaded, setLoaded] = useState(false);
   const [saveState, setSaveState] = useState<"loading" | "saving" | "saved" | "offline">("loading");
@@ -289,63 +300,65 @@ export default function Home() {
     }));
   }
 
-  return (
-    <main className="h-dvh overflow-hidden bg-[#dff5ff] pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)] text-[#153454] md:p-5">
-      <div className="mx-auto flex h-full min-h-0 max-w-4xl flex-col overflow-hidden bg-[radial-gradient(circle_at_top_left,_#ffffff_0,_#eaf8ff_45%,_#fff1f6_100%)] md:rounded-[2.5rem] md:shadow-2xl md:shadow-sky-300/35 md:ring-1 md:ring-white/90">
-        <header className="relative z-30 flex shrink-0 items-center justify-between border-b border-[#d7eff9] bg-white/90 px-4 py-3 backdrop-blur-xl sm:px-7 md:rounded-t-[2.5rem]">
-          <div className="flex items-center gap-3">
-            <div className="relative size-12 overflow-hidden rounded-[1.15rem] bg-white shadow-lg shadow-sky-200/70 ring-2 ring-white">
-              <span role="img" aria-label="Pika Flights" className="block size-full bg-cover bg-center" style={{ backgroundImage: "url('/icon-192.png')" }} />
-            </div>
-            <div>
-              <p className="text-[10px] font-extrabold uppercase tracking-[0.24em] text-[#f25789]">Pika</p>
-              <h1 className="text-lg font-black tracking-tight text-[#0c2d59]">Flights</h1>
-            </div>
-          </div>
-          <div className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${saveState === "offline" ? "bg-[#ffe5eb] text-[#d84464]" : "bg-[#e3f7ff] text-[#087cb6]"}`} aria-live="polite">
-            {saveState === "offline" ? <CloudOff className="size-3.5" /> : saveState === "saved" ? <Cloud className="size-3.5" /> : <RotateCcw className="size-3.5 animate-spin" />}
-            {saveState === "loading" ? "Loading" : saveState === "saving" ? "Saving" : saveState === "offline" ? "Offline" : "Synced"}
-          </div>
-        </header>
+  function changeTab(nextTab: AppTab) {
+    if (nextTab === tab) return;
+    setTab(nextTab);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
-        <Tabs defaultValue="flights" className="relative min-h-0 flex-1 overflow-hidden">
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-5 pt-5 sm:px-7 sm:pb-7">
-            <TabsContent value="flights" className="m-0 space-y-5">
-              <section className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#0b2f66] via-[#116db8] to-[#35bce9] p-5 text-white shadow-xl shadow-sky-300/45 sm:p-7">
-                <div className="absolute -right-9 -top-12 size-40 rounded-full border-[22px] border-white/10" />
-                <div className="absolute -bottom-14 left-10 size-32 rounded-full bg-[#ff7298]/30 blur-2xl" />
+  return (
+    <div className="app-shell">
+      <header className="topbar">
+        <div className="brand-mark" aria-hidden="true">
+          <span className="block size-full bg-contain bg-center bg-no-repeat" style={{ backgroundImage: "url('/icon-192.png')" }} />
+        </div>
+        <div>
+          <p className="eyebrow">Travel planner</p>
+          <h1>Pika Flights</h1>
+        </div>
+        <button className={`top-action ${saveState === "offline" ? "offline" : ""}`} type="button" aria-label={saveState === "loading" ? "Loading travel plan" : saveState === "saving" ? "Saving travel plan" : saveState === "offline" ? "Cloud sync offline" : "Travel plan synced"} title={saveState === "offline" ? "Offline" : saveState === "saved" ? "Synced" : "Saving"}>
+          {saveState === "offline" ? <CloudOff className="size-[21px]" /> : saveState === "saved" ? <Cloud className="size-[21px]" /> : <RotateCcw className="size-[21px] animate-spin" />}
+        </button>
+      </header>
+
+      <main className="main-content">
+        {tab === "flights" && (
+          <section className="page-section space-y-5">
+              <section className="relative overflow-hidden rounded-[30px] border-2 border-white bg-gradient-to-br from-[#d1f3e3] via-[#e6f9ed] to-[#e7f1f5] p-5 text-[#17344f] shadow-[0_12px_28px_rgba(40,124,97,0.12)] sm:p-6">
+                <div className="absolute -right-20 -top-20 size-40 rounded-full bg-[#b398db]/15" />
+                <div className="absolute -bottom-32 -left-16 size-40 rounded-full bg-[#ec8fbd]/20" />
                 <div className="relative">
                   <div className="flex items-center justify-between gap-3">
-                    <span className="rounded-full bg-white/15 px-3 py-1 text-[11px] font-extrabold uppercase tracking-[0.18em] ring-1 ring-white/20">Next journey</span>
-                    <PlaneTakeoff className="size-6 text-[#ffd165]" />
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-white bg-white/70 px-3 py-1.5 text-[10px] font-bold text-[#71306c]"><PlaneTakeoff className="size-3.5" /> Next journey</span>
+                    <PlaneTakeoff className="size-6 text-[#b8790b]" />
                   </div>
-                  <Input aria-label="Trip name" value={plan.tripName} onChange={(event) => setPlan((current) => ({ ...current, tripName: event.target.value }))} className="mt-6 h-auto border-0 bg-transparent px-0 text-2xl font-black tracking-tight text-white shadow-none placeholder:text-white/50 focus-visible:ring-0 sm:text-3xl" placeholder="Name your trip" />
+                  <Input aria-label="Trip name" value={plan.tripName} onChange={(event) => setPlan((current) => ({ ...current, tripName: event.target.value }))} className="mt-5 h-auto border-0 bg-transparent px-0 font-[Manrope] text-[26px] font-extrabold tracking-[-0.9px] text-[#17344f] shadow-none placeholder:text-[#6d8179] focus-visible:ring-0" placeholder="Name your trip" />
                   <div className="mt-5 flex items-end justify-between gap-4">
                     <div>
-                      <p className="text-2xl font-black tracking-[0.08em] sm:text-3xl">{routeLabel}</p>
-                      <p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-white/75"><CalendarDays className="size-4" /> {countdown}</p>
+                      <p className="font-[Manrope] text-2xl font-extrabold tracking-[0.05em]">{routeLabel}</p>
+                      <p className="mt-1.5 flex items-center gap-1.5 text-xs font-semibold text-[#486d63]"><CalendarDays className="size-4" /> {countdown}</p>
                     </div>
-                    <div className="grid size-12 shrink-0 place-items-center rounded-2xl bg-[#ff6786] text-white shadow-lg shadow-[#0c315e]/20 ring-1 ring-white/30"><MapPin className="size-5" /></div>
+                    <div className="grid size-12 shrink-0 place-items-center rounded-2xl border-2 border-white bg-[#f1e7fa] text-[#71306c] shadow-[0_4px_12px_rgba(113,48,108,0.08)]"><MapPin className="size-5" /></div>
                   </div>
                 </div>
               </section>
 
-              <section className="rounded-[2rem] bg-[#e8f8ff] p-4 shadow-sm ring-1 ring-[#c4eaf9] sm:p-6">
+              <section className={surfaceClass}>
                 <div className="flex items-center justify-between gap-3">
-                  <div><p className="text-xs font-extrabold uppercase tracking-[0.16em] text-[#1599d1]">Traveller</p><h2 className="mt-1 text-xl font-black text-[#102f58]">Who is flying?</h2></div>
-                  <div className="grid size-11 place-items-center rounded-2xl bg-white text-[#0a84c3] shadow-sm ring-1 ring-[#d5f0fa]"><BriefcaseBusiness className="size-5" /></div>
+                  <div><p className="eyebrow">Traveller</p><h2 className="font-[Manrope] text-xl font-extrabold tracking-[-0.5px] text-[#17344f]">Who is flying?</h2></div>
+                  <div className="grid size-11 place-items-center rounded-2xl border-2 border-white bg-[#f1e7fa] text-[#71306c] shadow-[0_4px_12px_rgba(113,48,108,0.08)]"><BriefcaseBusiness className="size-5" /></div>
                 </div>
                 <Input aria-label="Traveller names" placeholder="Traveller name(s)" value={plan.traveler} onChange={(event) => setPlan((current) => ({ ...current, traveler: event.target.value }))} className={`${fieldClass} mt-4`} />
               </section>
 
               {plan.flights.map((flight, index) => (
-                <section key={flight.id} className="rounded-[2rem] bg-[#edf8ff] p-4 shadow-sm ring-1 ring-[#c7eafa] sm:p-6">
+                <section key={flight.id} className={surfaceClass}>
                   <div className="mb-5 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <span className="grid size-10 place-items-center rounded-2xl bg-[#0d3a70] text-sm font-black text-white shadow-md shadow-sky-200">{index + 1}</span>
-                      <div><p className="text-xs font-extrabold uppercase tracking-[0.16em] text-[#1397d0]">Flight segment</p><h2 className="text-lg font-black text-[#102f58]">{flight.from || "From"} <ArrowRight className="mx-1 inline size-4 text-[#f45f7e]" /> {flight.to || "To"}</h2></div>
+                      <span className="grid size-10 place-items-center rounded-[14px] bg-[#e1f6ec] font-[Manrope] text-sm font-extrabold text-[#086553]">{index + 1}</span>
+                      <div><p className="eyebrow">Flight segment</p><h2 className="font-[Manrope] text-lg font-extrabold text-[#17344f]">{flight.from || "From"} <ArrowRight className="mx-1 inline size-4 text-[#ec8fbd]" /> {flight.to || "To"}</h2></div>
                     </div>
-                    {plan.flights.length > 1 && <Button type="button" variant="ghost" size="icon" aria-label={`Remove flight ${index + 1}`} className="rounded-xl text-[#82a3b6] hover:bg-[#ffe7ed] hover:text-[#e54868]" onClick={() => setPlan((current) => ({ ...current, flights: current.flights.filter((item) => item.id !== flight.id) }))}><Trash2 /></Button>}
+                    {plan.flights.length > 1 && <Button type="button" variant="ghost" size="icon" aria-label={`Remove flight ${index + 1}`} className="size-11 rounded-[15px] text-[#a62d57] transition-colors hover:bg-[#fce8f2] hover:text-[#a62d57]" onClick={() => setPlan((current) => ({ ...current, flights: current.flights.filter((item) => item.id !== flight.id) }))}><Trash2 /></Button>}
                   </div>
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                     <Field label="From"><Input maxLength={3} value={flight.from} onChange={(event) => updateFlight(flight.id, { from: event.target.value.toUpperCase() })} placeholder="JED" className={`${fieldClass} uppercase`} /></Field>
@@ -358,27 +371,29 @@ export default function Home() {
                     <Field label="Terminal"><Input value={flight.terminal} onChange={(event) => updateFlight(flight.id, { terminal: event.target.value })} placeholder="T1" className={fieldClass} /></Field>
                     <Field label="Gate"><Input value={flight.gate} onChange={(event) => updateFlight(flight.id, { gate: event.target.value })} placeholder="A12" className={fieldClass} /></Field>
                     <Field label="Booking reference" className="col-span-2"><Input value={flight.bookingRef} onChange={(event) => updateFlight(flight.id, { bookingRef: event.target.value.toUpperCase() })} placeholder="ABC123" className={fieldClass} /></Field>
-                    <Field label="Notes" className="col-span-2 sm:col-span-4"><Textarea value={flight.notes} onChange={(event) => updateFlight(flight.id, { notes: event.target.value })} placeholder="Check-in, transfer or pickup notes…" className="min-h-20 rounded-2xl border-[#cdeafa] bg-white/95 text-[#153454] shadow-none placeholder:text-[#7ca5bd] focus-visible:ring-[#9ce4fb]" /></Field>
+                    <Field label="Notes" className="col-span-2 sm:col-span-4"><Textarea value={flight.notes} onChange={(event) => updateFlight(flight.id, { notes: event.target.value })} placeholder="Check-in, transfer or pickup notes…" className="min-h-24 rounded-[14px] border-[#ccdcd4] bg-[#fcfefd] px-3 text-base text-[#17344f] shadow-none placeholder:text-[#879790] focus-visible:border-[#b398db] focus-visible:ring-[#b398db]/25" /></Field>
                   </div>
                 </section>
               ))}
 
-              <Button type="button" variant="outline" className="h-12 w-full rounded-2xl border-dashed border-[#53bce5] bg-white/80 font-extrabold text-[#0b6fa8] hover:bg-[#e4f7ff]" onClick={() => setPlan((current) => ({ ...current, flights: [...current.flights, emptyFlight()] }))}><CirclePlus className="size-5" /> Add another flight</Button>
-            </TabsContent>
+              <Button type="button" variant="outline" className={`${secondaryButtonClass} w-full`} onClick={() => setPlan((current) => ({ ...current, flights: [...current.flights, emptyFlight()] }))}><CirclePlus className="size-5" /> Add another flight</Button>
+          </section>
+        )}
 
-            <TabsContent value="packing" className="m-0 space-y-5">
-              <section className="overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#087fbd] via-[#16a9d4] to-[#43d4e7] p-5 text-white shadow-xl shadow-sky-300/45 sm:p-7">
+        {tab === "packing" && (
+          <section className="page-section space-y-5">
+              <section className="overflow-hidden rounded-[30px] border-2 border-white bg-gradient-to-br from-[#d1f3e3] via-[#e6f9ed] to-[#e7f1f5] p-5 text-[#17344f] shadow-[0_12px_28px_rgba(40,124,97,0.12)] sm:p-6">
                 <div className="flex items-center justify-between gap-4">
-                  <div><p className="text-xs font-extrabold uppercase tracking-[0.18em] text-white/75">Packing progress</p><h2 className="mt-1 text-3xl font-black">{packedCount} of {plan.packing.length}</h2><p className="mt-1 text-sm font-semibold text-white/80">items are safely in your bag</p></div>
-                  <div className="grid size-16 place-items-center rounded-[1.6rem] bg-white/20 ring-1 ring-white/25"><PackageCheck className="size-8" /></div>
+                  <div><p className="eyebrow">Packing progress</p><h2 className="mt-1 font-[Manrope] text-3xl font-extrabold tracking-[-0.9px]">{packedCount} of {plan.packing.length}</h2><p className="mt-1 text-xs font-semibold text-[#486d63]">items are safely in your bag</p></div>
+                  <div className="grid size-16 place-items-center rounded-[21px] border-2 border-white bg-[#f1e7fa] text-[#71306c] shadow-[0_4px_12px_rgba(113,48,108,0.08)]"><PackageCheck className="size-8" /></div>
                 </div>
-                <Progress value={packingPercent} className="mt-5 h-3 bg-white/25 [&>div]:bg-white" />
+                <Progress value={packingPercent} className="mt-5 h-3 bg-white/80 [&>div]:bg-[#117d67]" />
               </section>
 
-              <section className="rounded-[2rem] bg-[#ecfaff] p-4 ring-1 ring-[#c4ebf9] sm:p-6">
+              <section className={surfaceClass}>
                 <div className="flex items-center justify-between gap-3">
-                  <div><p className="text-xs font-extrabold uppercase tracking-[0.16em] text-[#098fc9]">Your list</p><h2 className="mt-1 text-xl font-black text-[#102f58]">Ready, set, pack</h2></div>
-                  {packedCount > 0 && <Button type="button" variant="ghost" size="sm" className="rounded-xl text-xs font-bold text-[#0879ad] hover:bg-white/80" onClick={() => setPlan((current) => ({ ...current, packing: current.packing.map((item) => ({ ...item, checked: false })) }))}>Reset</Button>}
+                  <div><p className="eyebrow">Your list</p><h2 className="font-[Manrope] text-xl font-extrabold tracking-[-0.5px] text-[#17344f]">Ready, set, pack</h2></div>
+                  {packedCount > 0 && <Button type="button" variant="ghost" size="sm" className="rounded-xl text-xs font-bold text-[#71306c] transition-colors hover:bg-[#f1e7fa] hover:text-[#71306c]" onClick={() => setPlan((current) => ({ ...current, packing: current.packing.map((item) => ({ ...item, checked: false })) }))}>Reset</Button>}
                 </div>
                 <div className="mt-5 space-y-5">
                   {categories.map((category) => {
@@ -386,13 +401,13 @@ export default function Home() {
                     if (!items.length) return null;
                     return (
                       <div key={category}>
-                        <div className="mb-2 flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.13em] text-[#6a90a7]"><span>{category}</span><span className="h-px flex-1 bg-[#bde8f8]" /></div>
-                        <div className="overflow-hidden rounded-2xl bg-white/90 ring-1 ring-[#d8f0f9]">
+                        <div className="mb-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.12em] text-[#71306c]"><span>{category}</span><span className="h-px flex-1 bg-[#dfe9e6]" /></div>
+                        <div className="overflow-hidden rounded-[20px] border border-[#dfe9e6] bg-white">
                           {items.map((item) => (
-                            <div key={item.id} className="group flex min-h-12 items-center gap-3 border-b border-[#e6f6fb] px-3 last:border-0">
-                              <Checkbox id={item.id} checked={item.checked} onCheckedChange={(checked) => setPlan((current) => ({ ...current, packing: current.packing.map((packingItem) => packingItem.id === item.id ? { ...packingItem, checked: checked === true } : packingItem) }))} className="size-5 rounded-md border-[#63c6e9] data-[state=checked]:border-[#149bd0] data-[state=checked]:bg-[#149bd0]" />
-                              <label htmlFor={item.id} className={`flex-1 cursor-pointer py-3 text-sm font-semibold ${item.checked ? "text-[#8fa9b7] line-through" : "text-[#294d69]"}`}>{item.label}</label>
-                              <Button type="button" variant="ghost" size="icon" aria-label={`Remove ${item.label}`} className="size-8 rounded-lg text-[#abc2cf] opacity-100 hover:bg-[#ffe7ed] hover:text-[#e54868] sm:opacity-0 sm:group-hover:opacity-100" onClick={() => setPlan((current) => ({ ...current, packing: current.packing.filter((packingItem) => packingItem.id !== item.id) }))}><Trash2 className="size-4" /></Button>
+                            <div key={item.id} className="group flex min-h-[58px] items-center gap-3 border-b border-[#dfe9e6] px-3 last:border-0">
+                              <Checkbox id={item.id} checked={item.checked} onCheckedChange={(checked) => setPlan((current) => ({ ...current, packing: current.packing.map((packingItem) => packingItem.id === item.id ? { ...packingItem, checked: checked === true } : packingItem) }))} className="size-6 rounded-[9px] border-[#c7d6d0] data-[state=checked]:border-[#117d67] data-[state=checked]:bg-[#117d67]" />
+                              <label htmlFor={item.id} className={`flex-1 cursor-pointer py-3 text-sm font-semibold ${item.checked ? "text-[#8a9a94] line-through" : "text-[#17344f]"}`}>{item.label}</label>
+                              <Button type="button" variant="ghost" size="icon" aria-label={`Remove ${item.label}`} className="size-11 rounded-[13px] text-[#a62d57] opacity-100 transition-colors hover:bg-[#fce8f2] hover:text-[#a62d57] sm:opacity-0 sm:group-hover:opacity-100" onClick={() => setPlan((current) => ({ ...current, packing: current.packing.filter((packingItem) => packingItem.id !== item.id) }))}><Trash2 className="size-4" /></Button>
                             </div>
                           ))}
                         </div>
@@ -402,29 +417,31 @@ export default function Home() {
                 </div>
               </section>
 
-              <section className="rounded-[2rem] bg-[#fff5d8] p-4 ring-1 ring-[#ffe29a] sm:p-6">
-                <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-[#c97905]">Add your own</p>
+              <section className="rounded-[24px] border border-[#edc9da] bg-[#fff7fb] p-4 shadow-[0_10px_26px_rgba(40,91,78,0.05)] sm:p-5">
+                <p className="eyebrow">Add your own</p>
                 <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_150px_auto]">
                   <Input value={newPackingItem} onChange={(event) => setNewPackingItem(event.target.value)} onKeyDown={(event) => event.key === "Enter" && addPackingItem()} placeholder="e.g. Sunglasses" className={fieldClass} />
-                  <NativeSelect value={newPackingCategory} onChange={(event) => setNewPackingCategory(event.target.value)} className="h-11 rounded-2xl border-[#ffe3a0] bg-white/90 font-semibold" aria-label="Packing category">{categories.map((category) => <NativeSelectOption key={category} value={category}>{category}</NativeSelectOption>)}</NativeSelect>
-                  <Button type="button" onClick={addPackingItem} className="h-11 rounded-2xl bg-[#ff9e2f] font-extrabold text-white shadow-md shadow-orange-200 hover:bg-[#ef8c20]"><Plus /> Add</Button>
+                  <NativeSelect value={newPackingCategory} onChange={(event) => setNewPackingCategory(event.target.value)} className="h-12 rounded-[14px] border-[#ccdcd4] bg-[#fcfefd] px-3 text-base font-semibold text-[#17344f]" aria-label="Packing category">{categories.map((category) => <NativeSelectOption key={category} value={category}>{category}</NativeSelectOption>)}</NativeSelect>
+                  <Button type="button" onClick={addPackingItem} className={primaryButtonClass}><Plus /> Add</Button>
                 </div>
               </section>
-            </TabsContent>
+          </section>
+        )}
 
-            <TabsContent value="baggage" className="m-0 space-y-5">
-              <section className="rounded-[2rem] bg-gradient-to-br from-[#f05272] via-[#ff6685] to-[#ff77a5] p-5 text-white shadow-xl shadow-pink-300/45 sm:p-7">
+        {tab === "baggage" && (
+          <section className="page-section space-y-5">
+              <section className="overflow-hidden rounded-[30px] border-2 border-white bg-gradient-to-br from-[#d1f3e3] via-[#e6f9ed] to-[#e7f1f5] p-5 text-[#17344f] shadow-[0_12px_28px_rgba(40,124,97,0.12)] sm:p-6">
                 <div className="flex items-center justify-between gap-4">
-                  <div><p className="text-xs font-extrabold uppercase tracking-[0.18em] text-white/80">Baggage calculator</p><h2 className="mt-1 text-3xl font-black">Weigh every bag</h2><p className="mt-1 text-sm font-semibold text-white/80">Use any body-weight scale—no luggage scale needed.</p></div>
-                  <div className="grid size-16 place-items-center rounded-[1.6rem] bg-white/20 ring-1 ring-white/25"><Luggage className="size-8" /></div>
+                  <div><p className="eyebrow">Baggage calculator</p><h2 className="mt-1 font-[Manrope] text-3xl font-extrabold tracking-[-0.9px]">Weigh every bag</h2><p className="mt-1 text-xs font-semibold text-[#486d63]">Use any body-weight scale—no luggage scale needed.</p></div>
+                  <div className="grid size-16 place-items-center rounded-[21px] border-2 border-white bg-[#f1e7fa] text-[#71306c] shadow-[0_4px_12px_rgba(113,48,108,0.08)]"><Luggage className="size-8" /></div>
                 </div>
               </section>
 
-              <section className="rounded-[2rem] bg-[#fff0f5] p-4 ring-1 ring-[#ffd4e0] sm:p-6">
+              <section className="rounded-[24px] border border-[#edc9da] bg-[#fff7fb] p-4 shadow-[0_10px_26px_rgba(40,91,78,0.05)] sm:p-5">
                 <div>
-                  <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-[#e24e72]">Step 1</p>
-                  <h2 className="mt-1 text-xl font-black text-[#102f58]">Weigh yourself first</h2>
-                  <p className="mt-1 text-sm font-semibold leading-5 text-[#6c8ba0]">Stand on the scale without a bag and enter your weight.</p>
+                  <p className="eyebrow">Step 1</p>
+                  <h2 className="font-[Manrope] text-xl font-extrabold tracking-[-0.5px] text-[#17344f]">Weigh yourself first</h2>
+                  <p className="mt-1 text-xs font-semibold leading-5 text-[#5d6b79]">Stand on the scale without a bag and enter your weight.</p>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <Field label="Your weight (kg)" className="mt-4"><Input type="number" inputMode="decimal" min="0" step="0.1" value={plan.baggage.personWeight || ""} onChange={(event) => setPlan((current) => ({ ...current, baggage: { ...current.baggage, personWeight: toNonNegativeNumber(event.target.value) } }))} placeholder="e.g. 70" className={fieldClass} /></Field>
@@ -432,10 +449,10 @@ export default function Home() {
                 </div>
               </section>
 
-              <section className="rounded-[2rem] bg-[#edf8ff] p-4 ring-1 ring-[#c7eafa] sm:p-6">
+              <section className={surfaceClass}>
                 <div className="flex items-start justify-between gap-3">
-                  <div><p className="text-xs font-extrabold uppercase tracking-[0.16em] text-[#1397d0]">Step 2</p><h2 className="mt-1 text-xl font-black text-[#102f58]">Hold each bag on the scale</h2><p className="mt-1 text-sm font-semibold leading-5 text-[#6c8ba0]">Enter the weight shown while you are holding the bag.</p></div>
-                  <span className="shrink-0 rounded-full bg-white px-3 py-1 text-xs font-extrabold text-[#0b79b2]">{plan.baggage.bags.length} {plan.baggage.bags.length === 1 ? "bag" : "bags"}</span>
+                  <div><p className="eyebrow">Step 2</p><h2 className="font-[Manrope] text-xl font-extrabold tracking-[-0.5px] text-[#17344f]">Hold each bag on the scale</h2><p className="mt-1 text-xs font-semibold leading-5 text-[#5d6b79]">Enter the weight shown while you are holding the bag.</p></div>
+                  <span className="shrink-0 rounded-full border border-white bg-[#fce8f2] px-3 py-1.5 text-xs font-bold text-[#71306c]">{plan.baggage.bags.length} {plan.baggage.bags.length === 1 ? "bag" : "bags"}</span>
                 </div>
                 <div className="mt-4 space-y-3">
                   {plan.baggage.bags.map((bag, index) => {
@@ -443,40 +460,39 @@ export default function Home() {
                     const hasCombinedWeight = bag.combinedWeight > 0;
                     const invalidWeight = personWeight > 0 && hasCombinedWeight && bag.combinedWeight < personWeight;
                     return (
-                      <div key={bag.id} className="rounded-3xl bg-white/90 p-4 shadow-[0_8px_24px_rgba(29,143,202,0.08)] ring-1 ring-[#d8f0f9]">
+                      <div key={bag.id} className="rounded-[22px] border border-[#dfe9e6] bg-[#fcfefd] p-4">
                         <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-2.5"><span className="grid size-9 place-items-center rounded-2xl bg-[#0d3a70] text-sm font-black text-white">{index + 1}</span><div><p className="text-xs font-extrabold uppercase tracking-[0.14em] text-[#1397d0]">Bag {index + 1}</p><p className="text-sm font-black text-[#153454]">You + Bag {index + 1}</p></div></div>
-                          {plan.baggage.bags.length > 1 && <Button type="button" variant="ghost" size="icon" aria-label={`Remove Bag ${index + 1}`} className="size-9 rounded-xl text-[#82a3b6] hover:bg-[#ffe7ed] hover:text-[#e54868]" onClick={() => setPlan((current) => ({ ...current, baggage: { ...current.baggage, bags: current.baggage.bags.filter((item) => item.id !== bag.id) } }))}><Trash2 className="size-4" /></Button>}
+                          <div className="flex items-center gap-2.5"><span className="grid size-9 place-items-center rounded-[13px] bg-[#e1f6ec] font-[Manrope] text-sm font-extrabold text-[#086553]">{index + 1}</span><div><p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#71306c]">Bag {index + 1}</p><p className="text-sm font-bold text-[#17344f]">You + Bag {index + 1}</p></div></div>
+                          {plan.baggage.bags.length > 1 && <Button type="button" variant="ghost" size="icon" aria-label={`Remove Bag ${index + 1}`} className="size-11 rounded-[13px] text-[#a62d57] transition-colors hover:bg-[#fce8f2] hover:text-[#a62d57]" onClick={() => setPlan((current) => ({ ...current, baggage: { ...current.baggage, bags: current.baggage.bags.filter((item) => item.id !== bag.id) } }))}><Trash2 className="size-4" /></Button>}
                         </div>
                         <Field label={`Scale reading with Bag ${index + 1} (kg)`} className="mt-4"><Input type="number" inputMode="decimal" min="0" step="0.1" value={bag.combinedWeight || ""} onChange={(event) => setPlan((current) => ({ ...current, baggage: { ...current.baggage, bags: current.baggage.bags.map((item) => item.id === bag.id ? { ...item, combinedWeight: toNonNegativeNumber(event.target.value) } : item) } }))} placeholder="e.g. 82.5" className={fieldClass} /></Field>
-                        <div className={`mt-3 rounded-2xl px-3 py-2.5 ${invalidWeight ? "bg-[#ffe5ec] text-[#d94163]" : "bg-[#e2f7ff] text-[#0b76a9]"}`}>
+                        <div className={`mt-3 rounded-2xl px-3 py-2.5 ${invalidWeight ? "bg-[#fce8f2] text-[#a62d57]" : "bg-[#e1f6ec] text-[#086553]"}`}>
                           {!personWeight ? <p className="text-xs font-bold">Enter your weight in Step 1 first.</p> : !hasCombinedWeight ? <p className="text-xs font-bold">Now weigh yourself while holding Bag {index + 1}.</p> : invalidWeight ? <p className="text-xs font-bold">This must be at least your body weight.</p> : <div className="flex items-center justify-between gap-3"><p className="text-xs font-bold">{bag.combinedWeight.toFixed(1)} − {personWeight.toFixed(1)}</p><p className="text-sm font-black">Bag {index + 1}: {bagWeight.toFixed(1)} kg</p></div>}
                         </div>
                       </div>
                     );
                   })}
                 </div>
-                <Button type="button" variant="outline" onClick={addBag} className="mt-4 h-11 w-full rounded-2xl border-dashed border-[#53bce5] bg-white/80 font-extrabold text-[#0b6fa8] hover:bg-[#e4f7ff]"><Plus className="size-4" /> Add another bag</Button>
+                <Button type="button" variant="outline" onClick={addBag} className={`${secondaryButtonClass} mt-4 w-full`}><Plus className="size-4" /> Add another bag</Button>
               </section>
 
-              <section className="rounded-[2rem] bg-[#fff5d8] p-4 ring-1 ring-[#ffe29a] sm:p-6">
+              <section className="rounded-[24px] border border-[#ccebdc] bg-[#e1f6ec] p-4 shadow-[0_10px_26px_rgba(40,91,78,0.05)] sm:p-5">
                 <div className="flex items-center justify-between gap-3">
-                  <div><p className="text-xs font-extrabold uppercase tracking-[0.16em] text-[#c97905]">Total baggage</p><p className="mt-1 text-3xl font-black text-[#102f58]">{totalBagWeight.toFixed(1)} <span className="text-base text-[#6c8ba0]">kg</span></p></div>
-                  <span className={`rounded-full px-3 py-1.5 text-xs font-extrabold ${baggageRemaining < 0 ? "bg-[#ffe1e8] text-[#d73f61]" : "bg-[#dcf7ff] text-[#0879a9]"}`}>{baggageRemaining < 0 ? `${Math.abs(baggageRemaining).toFixed(1)} kg over` : `${baggageRemaining.toFixed(1)} kg left`}</span>
+                  <div><p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#71306c]">Total baggage</p><p className="mt-1 font-[Manrope] text-3xl font-extrabold tracking-[-0.8px] text-[#17344f]">{totalBagWeight.toFixed(1)} <span className="text-base text-[#5d6b79]">kg</span></p></div>
+                  <span className={`rounded-full px-3 py-1.5 text-xs font-bold ${baggageRemaining < 0 ? "bg-[#fce8f2] text-[#a62d57]" : "bg-white/80 text-[#086553]"}`}>{baggageRemaining < 0 ? `${Math.abs(baggageRemaining).toFixed(1)} kg over` : `${baggageRemaining.toFixed(1)} kg left`}</span>
                 </div>
-                <Progress value={baggagePercent} className={`mt-4 h-3 bg-white/70 ${baggageRemaining < 0 ? "[&>div]:bg-[#ef5a78]" : "[&>div]:bg-[#22aede]"}`} />
-                <p className="mt-2 text-xs font-bold text-[#8a7954]">Allowance: {plan.baggage.checkedAllowance.toFixed(1)} kg</p>
+                <Progress value={baggagePercent} className={`mt-4 h-3 bg-white/80 ${baggageRemaining < 0 ? "[&>div]:bg-[#a62d57]" : "[&>div]:bg-[#117d67]"}`} />
+                <p className="mt-2 text-xs font-bold text-[#426f5e]">Allowance: {plan.baggage.checkedAllowance.toFixed(1)} kg</p>
               </section>
-            </TabsContent>
-          </div>
+          </section>
+        )}
+      </main>
 
-          <TabsList className="relative inset-auto z-40 mx-auto mb-3 h-[72px] w-[calc(100%-1.5rem)] max-w-[520px] shrink-0 self-center rounded-[1.6rem] border border-[#d6eff9] bg-white/95 p-2 shadow-2xl shadow-sky-300/35 backdrop-blur-xl md:mb-0">
-            <TabsTrigger value="flights" className="h-full flex-col gap-1 rounded-[1.1rem] text-[11px] font-extrabold text-[#638399] data-[state=active]:bg-[#dff5ff] data-[state=active]:text-[#087bb6] data-[state=active]:shadow-none"><PlaneTakeoff className="size-5" /> Flights</TabsTrigger>
-            <TabsTrigger value="packing" className="h-full flex-col gap-1 rounded-[1.1rem] text-[11px] font-extrabold text-[#638399] data-[state=active]:bg-[#daf8fb] data-[state=active]:text-[#087e9f] data-[state=active]:shadow-none"><Check className="size-5" /> Checklist</TabsTrigger>
-            <TabsTrigger value="baggage" className="h-full flex-col gap-1 rounded-[1.1rem] text-[11px] font-extrabold text-[#638399] data-[state=active]:bg-[#ffe5ed] data-[state=active]:text-[#df4568] data-[state=active]:shadow-none"><Luggage className="size-5" /> Baggage</TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </div>
-    </main>
+      <nav className="bottom-nav" aria-label="Main navigation">
+        <button type="button" className={tab === "flights" ? "active" : ""} aria-current={tab === "flights" ? "page" : undefined} onClick={() => changeTab("flights")}><PlaneTakeoff className="size-[21px]" /><span>Flights</span></button>
+        <button type="button" className={tab === "packing" ? "active" : ""} aria-current={tab === "packing" ? "page" : undefined} onClick={() => changeTab("packing")}><Check className="size-[21px]" /><span>Checklist</span></button>
+        <button type="button" className={tab === "baggage" ? "active" : ""} aria-current={tab === "baggage" ? "page" : undefined} onClick={() => changeTab("baggage")}><Luggage className="size-[21px]" /><span>Baggage</span></button>
+      </nav>
+    </div>
   );
 }
