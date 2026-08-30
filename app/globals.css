@@ -118,5 +118,19 @@ select {
 
 input[type="date"],
 input[type="time"] {
+  display: block;
+  box-sizing: border-box;
+  inline-size: 100%;
   min-width: 0;
+  min-inline-size: 0;
+  max-width: 100%;
+  max-inline-size: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+input[type="date"]::-webkit-date-and-time-value,
+input[type="time"]::-webkit-date-and-time-value {
+  min-width: 0;
+  text-align: left;
 }

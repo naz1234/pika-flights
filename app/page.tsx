@@ -143,7 +143,7 @@ function Field({
   className?: string;
 }) {
   return (
-    <label className={`grid gap-1.5 text-xs font-bold text-[#52738b] ${className}`}>
+    <label className={`grid min-w-0 max-w-full gap-1.5 text-xs font-bold text-[#52738b] ${className}`}>
       <span>{label}</span>
       {children}
     </label>
@@ -309,8 +309,8 @@ export default function Home() {
 
   return (
     <main className="min-h-dvh bg-[#dff5ff] text-[#153454]">
-      <div className="mx-auto min-h-dvh max-w-4xl overflow-hidden bg-[radial-gradient(circle_at_top_left,_#ffffff_0,_#eaf8ff_45%,_#fff1f6_100%)] md:my-5 md:min-h-[calc(100dvh-40px)] md:rounded-[2.5rem] md:shadow-2xl md:shadow-sky-300/35 md:ring-1 md:ring-white/90">
-        <header className="sticky top-0 z-30 flex items-center justify-between border-b border-[#d7eff9] bg-white/90 px-4 py-3 backdrop-blur-xl sm:px-7">
+      <div className="mx-auto min-h-dvh max-w-4xl overflow-x-clip bg-[radial-gradient(circle_at_top_left,_#ffffff_0,_#eaf8ff_45%,_#fff1f6_100%)] md:my-5 md:min-h-[calc(100dvh-40px)] md:rounded-[2.5rem] md:shadow-2xl md:shadow-sky-300/35 md:ring-1 md:ring-white/90">
+        <header className="sticky top-0 z-30 flex items-center justify-between border-b border-[#d7eff9] bg-white/90 px-4 py-3 backdrop-blur-xl sm:px-7 md:rounded-t-[2.5rem]">
           <div className="flex items-center gap-3">
             <div className="relative size-12 overflow-hidden rounded-[1.15rem] bg-white shadow-lg shadow-sky-200/70 ring-2 ring-white">
               <Image src="/icon-192.png" alt="Pika Flights" fill sizes="48px" className="object-cover" priority />
@@ -327,7 +327,7 @@ export default function Home() {
         </header>
 
         <Tabs defaultValue="flights" className="relative min-h-[calc(100dvh-68px)]">
-          <div className="px-4 pb-28 pt-5 sm:px-7 sm:pb-32">
+          <div className="px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-5 sm:px-7 sm:pb-[calc(8rem+env(safe-area-inset-bottom))]">
             <TabsContent value="flights" className="m-0 space-y-5">
               <section className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#0b2f66] via-[#116db8] to-[#35bce9] p-5 text-white shadow-xl shadow-sky-300/45 sm:p-7">
                 <div className="absolute -right-9 -top-12 size-40 rounded-full border-[22px] border-white/10" />
@@ -484,7 +484,7 @@ export default function Home() {
             </TabsContent>
           </div>
 
-          <TabsList className="fixed inset-x-3 bottom-3 z-40 mx-auto h-[72px] w-auto max-w-[520px] rounded-[1.6rem] border border-[#d6eff9] bg-white/95 p-2 shadow-2xl shadow-sky-300/35 backdrop-blur-xl md:absolute md:bottom-5">
+          <TabsList className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 mx-auto h-[72px] w-auto max-w-[520px] rounded-[1.6rem] border border-[#d6eff9] bg-white/95 p-2 shadow-2xl shadow-sky-300/35 backdrop-blur-xl md:absolute md:bottom-5">
             <TabsTrigger value="flights" className="h-full flex-col gap-1 rounded-[1.1rem] text-[11px] font-extrabold text-[#638399] data-[state=active]:bg-[#dff5ff] data-[state=active]:text-[#087bb6] data-[state=active]:shadow-none"><PlaneTakeoff className="size-5" /> Flights</TabsTrigger>
             <TabsTrigger value="packing" className="h-full flex-col gap-1 rounded-[1.1rem] text-[11px] font-extrabold text-[#638399] data-[state=active]:bg-[#daf8fb] data-[state=active]:text-[#087e9f] data-[state=active]:shadow-none"><Check className="size-5" /> Checklist</TabsTrigger>
             <TabsTrigger value="baggage" className="h-full flex-col gap-1 rounded-[1.1rem] text-[11px] font-extrabold text-[#638399] data-[state=active]:bg-[#ffe5ed] data-[state=active]:text-[#df4568] data-[state=active]:shadow-none"><Luggage className="size-5" /> Baggage</TabsTrigger>
