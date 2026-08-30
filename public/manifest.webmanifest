@@ -4,8 +4,8 @@
   "description": "Plan flights, packing and baggage in one shared mobile app.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f7f5ff",
-  "theme_color": "#7467f0",
+  "background_color": "#e8f8ff",
+  "theme_color": "#168fd1",
   "icons": [
     {
       "src": "/icon-192.png",
