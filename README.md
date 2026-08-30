@@ -14,7 +14,7 @@ A public, mobile-first flight planner for one shared trip. It includes:
 Requirements: Node.js 22.13 or newer.
 
 ```bash
-npm ci
+npm install
 npm run dev
 ```
 
