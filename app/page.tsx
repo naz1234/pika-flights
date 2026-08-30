@@ -51,6 +51,7 @@ type PackingItem = {
 
 type BagMeasurement = {
   id: string;
+  name: string;
   combinedWeight: number;
 };
 
@@ -74,6 +75,33 @@ type StoredPlan = Partial<Omit<PlanState, "baggage">> & {
 };
 
 const categories = ["Documents", "Clothes", "Toiletries", "Tech", "Health", "Comfort"];
+
+const bagThemes = [
+  {
+    card: "border-[#ccebdc] bg-[#f2fbf6]",
+    badge: "bg-[#d8f3e6] text-[#086553]",
+    accent: "text-[#086553]",
+    result: "bg-[#e1f6ec] text-[#086553]",
+  },
+  {
+    card: "border-[#dfd0ee] bg-[#fbf7fe]",
+    badge: "bg-[#eee3f8] text-[#71306c]",
+    accent: "text-[#71306c]",
+    result: "bg-[#f1e7fa] text-[#71306c]",
+  },
+  {
+    card: "border-[#edc9da] bg-[#fff7fb]",
+    badge: "bg-[#f9dfec] text-[#a62d57]",
+    accent: "text-[#a62d57]",
+    result: "bg-[#fce8f2] text-[#a62d57]",
+  },
+  {
+    card: "border-[#f0dfa8] bg-[#fffaf0]",
+    badge: "bg-[#fff0c9] text-[#795411]",
+    accent: "text-[#795411]",
+    result: "bg-[#fff3d4] text-[#795411]",
+  },
+] as const;
 
 const starterPacking: Array<[string, string]> = [
   ["Passport / ID", "Documents"],
@@ -126,7 +154,7 @@ const defaultState: PlanState = {
   baggage: {
     checkedAllowance: 20,
     personWeight: 0,
-    bags: [{ id: "starter-bag-1", combinedWeight: 0 }],
+    bags: [{ id: "starter-bag-1", name: "Bag 1", combinedWeight: 0 }],
   },
 };
 
@@ -139,8 +167,9 @@ function normalizePlan(data: StoredPlan): PlanState {
   const savedBags: unknown[] = Array.isArray(data.baggage?.bags) ? data.baggage.bags : [];
   const bags = savedBags
     .filter((bag): bag is Record<string, unknown> => Boolean(bag) && typeof bag === "object")
-    .map((bag) => ({
+    .map((bag, index) => ({
       id: typeof bag.id === "string" ? bag.id : makeId(),
+      name: typeof bag.name === "string" && bag.name.trim() ? bag.name : `Bag ${index + 1}`,
       combinedWeight: toNonNegativeNumber(bag.combinedWeight),
     }));
 
@@ -152,7 +181,7 @@ function normalizePlan(data: StoredPlan): PlanState {
     baggage: {
       checkedAllowance: toNonNegativeNumber(data.baggage?.checkedAllowance, defaultState.baggage.checkedAllowance),
       personWeight: toNonNegativeNumber(data.baggage?.personWeight),
-      bags: bags.length ? bags : [{ id: makeId(), combinedWeight: 0 }],
+      bags: bags.length ? bags : [{ id: makeId(), name: "Bag 1", combinedWeight: 0 }],
     },
   };
 }
@@ -295,7 +324,10 @@ export default function Home() {
       ...current,
       baggage: {
         ...current.baggage,
-        bags: [...current.baggage.bags, { id: makeId(), combinedWeight: 0 }],
+        bags: [
+          ...current.baggage.bags,
+          { id: makeId(), name: `Bag ${current.baggage.bags.length + 1}`, combinedWeight: 0 },
+        ],
       },
     }));
   }
@@ -459,15 +491,18 @@ export default function Home() {
                     const bagWeight = bagWeights[index];
                     const hasCombinedWeight = bag.combinedWeight > 0;
                     const invalidWeight = personWeight > 0 && hasCombinedWeight && bag.combinedWeight < personWeight;
+                    const displayName = bag.name.trim() || `Bag ${index + 1}`;
+                    const theme = bagThemes[index % bagThemes.length];
                     return (
-                      <div key={bag.id} className="rounded-[22px] border border-[#dfe9e6] bg-[#fcfefd] p-4">
+                      <div key={bag.id} className={`rounded-[22px] border p-4 ${theme.card}`}>
                         <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-2.5"><span className="grid size-9 place-items-center rounded-[13px] bg-[#e1f6ec] font-[Manrope] text-sm font-extrabold text-[#086553]">{index + 1}</span><div><p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#71306c]">Bag {index + 1}</p><p className="text-sm font-bold text-[#17344f]">You + Bag {index + 1}</p></div></div>
-                          {plan.baggage.bags.length > 1 && <Button type="button" variant="ghost" size="icon" aria-label={`Remove Bag ${index + 1}`} className="size-11 rounded-[13px] text-[#a62d57] transition-colors hover:bg-[#fce8f2] hover:text-[#a62d57]" onClick={() => setPlan((current) => ({ ...current, baggage: { ...current.baggage, bags: current.baggage.bags.filter((item) => item.id !== bag.id) } }))}><Trash2 className="size-4" /></Button>}
+                          <div className="flex min-w-0 items-center gap-2.5"><span className={`grid size-9 shrink-0 place-items-center rounded-[13px] font-[Manrope] text-sm font-extrabold ${theme.badge}`}>{index + 1}</span><div className="min-w-0"><p className={`text-[10px] font-bold uppercase tracking-[0.12em] ${theme.accent}`}>Bag {index + 1}</p><p className="truncate text-sm font-bold text-[#17344f]">{displayName}</p></div></div>
+                          {plan.baggage.bags.length > 1 && <Button type="button" variant="ghost" size="icon" aria-label={`Remove ${displayName}`} className="size-11 shrink-0 rounded-[13px] text-[#a62d57] transition-colors hover:bg-[#fce8f2] hover:text-[#a62d57]" onClick={() => setPlan((current) => ({ ...current, baggage: { ...current.baggage, bags: current.baggage.bags.filter((item) => item.id !== bag.id) } }))}><Trash2 className="size-4" /></Button>}
                         </div>
-                        <Field label={`Scale reading with Bag ${index + 1} (kg)`} className="mt-4"><Input type="number" inputMode="decimal" min="0" step="0.1" value={bag.combinedWeight || ""} onChange={(event) => setPlan((current) => ({ ...current, baggage: { ...current.baggage, bags: current.baggage.bags.map((item) => item.id === bag.id ? { ...item, combinedWeight: toNonNegativeNumber(event.target.value) } : item) } }))} placeholder="e.g. 82.5" className={fieldClass} /></Field>
-                        <div className={`mt-3 rounded-2xl px-3 py-2.5 ${invalidWeight ? "bg-[#fce8f2] text-[#a62d57]" : "bg-[#e1f6ec] text-[#086553]"}`}>
-                          {!personWeight ? <p className="text-xs font-bold">Enter your weight in Step 1 first.</p> : !hasCombinedWeight ? <p className="text-xs font-bold">Now weigh yourself while holding Bag {index + 1}.</p> : invalidWeight ? <p className="text-xs font-bold">This must be at least your body weight.</p> : <div className="flex items-center justify-between gap-3"><p className="text-xs font-bold">{bag.combinedWeight.toFixed(1)} − {personWeight.toFixed(1)}</p><p className="text-sm font-black">Bag {index + 1}: {bagWeight.toFixed(1)} kg</p></div>}
+                        <Field label="Bag name" className="mt-4"><Input value={bag.name} maxLength={40} onChange={(event) => setPlan((current) => ({ ...current, baggage: { ...current.baggage, bags: current.baggage.bags.map((item) => item.id === bag.id ? { ...item, name: event.target.value } : item) } }))} placeholder={`Bag ${index + 1}`} className={fieldClass} /></Field>
+                        <Field label={`Scale reading with ${displayName} (kg)`} className="mt-3"><Input type="number" inputMode="decimal" min="0" step="0.1" value={bag.combinedWeight || ""} onChange={(event) => setPlan((current) => ({ ...current, baggage: { ...current.baggage, bags: current.baggage.bags.map((item) => item.id === bag.id ? { ...item, combinedWeight: toNonNegativeNumber(event.target.value) } : item) } }))} placeholder="e.g. 82.5" className={fieldClass} /></Field>
+                        <div className={`mt-3 rounded-2xl px-3 py-2.5 ${invalidWeight ? "bg-[#fce8f2] text-[#a62d57]" : theme.result}`}>
+                          {!personWeight ? <p className="text-xs font-bold">Enter your weight in Step 1 first.</p> : !hasCombinedWeight ? <p className="text-xs font-bold">Now weigh yourself while holding {displayName}.</p> : invalidWeight ? <p className="text-xs font-bold">This must be at least your body weight.</p> : <div className="flex items-center justify-between gap-3"><p className="text-xs font-bold">{bag.combinedWeight.toFixed(1)} − {personWeight.toFixed(1)}</p><p className="text-right text-sm font-black">{displayName}: {bagWeight.toFixed(1)} kg</p></div>}
                         </div>
                       </div>
                     );
