@@ -11,9 +11,12 @@ export const metadata: Metadata = {
     title: "Pika Flights",
   },
   icons: {
-    icon: "/favicon.svg",
-    shortcut: "/favicon.svg",
-    apple: "/favicon.svg",
+    icon: [
+      { url: "/favicon-48.png", type: "image/png", sizes: "48x48" },
+      { url: "/icon-192.png", type: "image/png", sizes: "192x192" },
+    ],
+    shortcut: "/favicon-48.png",
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
 };
 
