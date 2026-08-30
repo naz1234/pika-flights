@@ -12,6 +12,7 @@ import {
   Luggage,
   MapPin,
   PackageCheck,
+  PencilLine,
   PlaneTakeoff,
   Plus,
   RotateCcw,
@@ -78,28 +79,36 @@ const categories = ["Documents", "Clothes", "Toiletries", "Tech", "Health", "Com
 
 const bagThemes = [
   {
-    card: "border-[#ccebdc] bg-[#f2fbf6]",
-    badge: "bg-[#d8f3e6] text-[#086553]",
+    card: "border-[#bfe4d2] bg-gradient-to-br from-[#ddf5e9] via-[#edf9f2] to-[#fbfefc] shadow-[0_12px_26px_rgba(17,125,103,0.11)]",
+    stripe: "bg-gradient-to-r from-[#117d67] via-[#33b995] to-[#8bd8bd]",
+    orb: "bg-[#7ed4b3]/20",
+    badge: "bg-[#117d67] text-white shadow-[0_7px_16px_rgba(17,125,103,0.2)]",
     accent: "text-[#086553]",
-    result: "bg-[#e1f6ec] text-[#086553]",
+    result: "border-[#bfe4d2] bg-white/70 text-[#086553]",
   },
   {
-    card: "border-[#dfd0ee] bg-[#fbf7fe]",
-    badge: "bg-[#eee3f8] text-[#71306c]",
+    card: "border-[#d9c5eb] bg-gradient-to-br from-[#eadcf8] via-[#f4edfb] to-[#fdfbff] shadow-[0_12px_26px_rgba(113,48,108,0.11)]",
+    stripe: "bg-gradient-to-r from-[#71306c] via-[#a86fa9] to-[#c7a9e5]",
+    orb: "bg-[#b398db]/20",
+    badge: "bg-[#71306c] text-white shadow-[0_7px_16px_rgba(113,48,108,0.2)]",
     accent: "text-[#71306c]",
-    result: "bg-[#f1e7fa] text-[#71306c]",
+    result: "border-[#d9c5eb] bg-white/70 text-[#71306c]",
   },
   {
-    card: "border-[#edc9da] bg-[#fff7fb]",
-    badge: "bg-[#f9dfec] text-[#a62d57]",
+    card: "border-[#edc4d6] bg-gradient-to-br from-[#f9dce9] via-[#fcecf3] to-[#fffafd] shadow-[0_12px_26px_rgba(166,45,87,0.1)]",
+    stripe: "bg-gradient-to-r from-[#a62d57] via-[#d75f8d] to-[#eea4c4]",
+    orb: "bg-[#ec8fbd]/20",
+    badge: "bg-[#a62d57] text-white shadow-[0_7px_16px_rgba(166,45,87,0.2)]",
     accent: "text-[#a62d57]",
-    result: "bg-[#fce8f2] text-[#a62d57]",
+    result: "border-[#edc4d6] bg-white/70 text-[#a62d57]",
   },
   {
-    card: "border-[#f0dfa8] bg-[#fffaf0]",
-    badge: "bg-[#fff0c9] text-[#795411]",
+    card: "border-[#ecd99d] bg-gradient-to-br from-[#ffedbc] via-[#fff5d9] to-[#fffdf6] shadow-[0_12px_26px_rgba(121,84,17,0.1)]",
+    stripe: "bg-gradient-to-r from-[#b8790b] via-[#edb442] to-[#f4d77a]",
+    orb: "bg-[#edb442]/20",
+    badge: "bg-[#b8790b] text-white shadow-[0_7px_16px_rgba(184,121,11,0.2)]",
     accent: "text-[#795411]",
-    result: "bg-[#fff3d4] text-[#795411]",
+    result: "border-[#ecd99d] bg-white/70 text-[#795411]",
   },
 ] as const;
 
@@ -494,14 +503,21 @@ export default function Home() {
                     const displayName = bag.name.trim() || `Bag ${index + 1}`;
                     const theme = bagThemes[index % bagThemes.length];
                     return (
-                      <div key={bag.id} className={`rounded-[22px] border p-4 ${theme.card}`}>
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex min-w-0 items-center gap-2.5"><span className={`grid size-9 shrink-0 place-items-center rounded-[13px] font-[Manrope] text-sm font-extrabold ${theme.badge}`}>{index + 1}</span><div className="min-w-0"><p className={`text-[10px] font-bold uppercase tracking-[0.12em] ${theme.accent}`}>Bag {index + 1}</p><p className="truncate text-sm font-bold text-[#17344f]">{displayName}</p></div></div>
+                      <div key={bag.id} className={`relative overflow-hidden rounded-[24px] border p-4 pt-5 ${theme.card}`}>
+                        <div aria-hidden="true" className={`absolute inset-x-0 top-0 h-1.5 ${theme.stripe}`} />
+                        <div aria-hidden="true" className={`absolute -right-12 -top-12 size-32 rounded-full ${theme.orb}`} />
+                        <div className="relative flex items-center justify-between gap-3">
+                          <div className="flex min-w-0 items-center gap-3">
+                            <span className={`relative grid size-12 shrink-0 place-items-center rounded-[17px] border-2 border-white/90 ${theme.badge}`}><Luggage className="size-6" /><span className={`absolute -right-1.5 -top-1.5 grid size-5 place-items-center rounded-full border-2 border-white bg-white font-[Manrope] text-[10px] font-extrabold ${theme.accent}`}>{index + 1}</span></span>
+                            <div className="min-w-0"><p className={`text-[10px] font-bold uppercase tracking-[0.14em] ${theme.accent}`}>Bag {index + 1}</p><p className="truncate font-[Manrope] text-base font-extrabold text-[#17344f]">You + {displayName}</p></div>
+                          </div>
                           {plan.baggage.bags.length > 1 && <Button type="button" variant="ghost" size="icon" aria-label={`Remove ${displayName}`} className="size-11 shrink-0 rounded-[13px] text-[#a62d57] transition-colors hover:bg-[#fce8f2] hover:text-[#a62d57]" onClick={() => setPlan((current) => ({ ...current, baggage: { ...current.baggage, bags: current.baggage.bags.filter((item) => item.id !== bag.id) } }))}><Trash2 className="size-4" /></Button>}
                         </div>
-                        <Field label="Bag name" className="mt-4"><Input value={bag.name} maxLength={40} onChange={(event) => setPlan((current) => ({ ...current, baggage: { ...current.baggage, bags: current.baggage.bags.map((item) => item.id === bag.id ? { ...item, name: event.target.value } : item) } }))} placeholder={`Bag ${index + 1}`} className={fieldClass} /></Field>
-                        <Field label={`Scale reading with ${displayName} (kg)`} className="mt-3"><Input type="number" inputMode="decimal" min="0" step="0.1" value={bag.combinedWeight || ""} onChange={(event) => setPlan((current) => ({ ...current, baggage: { ...current.baggage, bags: current.baggage.bags.map((item) => item.id === bag.id ? { ...item, combinedWeight: toNonNegativeNumber(event.target.value) } : item) } }))} placeholder="e.g. 82.5" className={fieldClass} /></Field>
-                        <div className={`mt-3 rounded-2xl px-3 py-2.5 ${invalidWeight ? "bg-[#fce8f2] text-[#a62d57]" : theme.result}`}>
+                        <div className="relative mt-4 grid gap-3 rounded-[19px] border border-white/80 bg-white/55 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] backdrop-blur-sm">
+                          <Field label="Bag name"><div className="relative"><PencilLine className={`pointer-events-none absolute left-3 top-1/2 z-10 size-4 -translate-y-1/2 ${theme.accent}`} /><Input value={bag.name} maxLength={40} onChange={(event) => setPlan((current) => ({ ...current, baggage: { ...current.baggage, bags: current.baggage.bags.map((item) => item.id === bag.id ? { ...item, name: event.target.value } : item) } }))} placeholder={`Bag ${index + 1}`} className={`${fieldClass} border-white/90 bg-white/80 pl-10 font-semibold`} /></div></Field>
+                          <Field label={`Scale reading with ${displayName} (kg)`}><Input type="number" inputMode="decimal" min="0" step="0.1" value={bag.combinedWeight || ""} onChange={(event) => setPlan((current) => ({ ...current, baggage: { ...current.baggage, bags: current.baggage.bags.map((item) => item.id === bag.id ? { ...item, combinedWeight: toNonNegativeNumber(event.target.value) } : item) } }))} placeholder="e.g. 82.5" className={`${fieldClass} border-white/90 bg-white/80 font-bold`} /></Field>
+                        </div>
+                        <div className={`relative mt-3 rounded-2xl border px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] ${invalidWeight ? "border-[#edc4d6] bg-[#fce8f2] text-[#a62d57]" : theme.result}`}>
                           {!personWeight ? <p className="text-xs font-bold">Enter your weight in Step 1 first.</p> : !hasCombinedWeight ? <p className="text-xs font-bold">Now weigh yourself while holding {displayName}.</p> : invalidWeight ? <p className="text-xs font-bold">This must be at least your body weight.</p> : <div className="flex items-center justify-between gap-3"><p className="text-xs font-bold">{bag.combinedWeight.toFixed(1)} − {personWeight.toFixed(1)}</p><p className="text-right text-sm font-black">{displayName}: {bagWeight.toFixed(1)} kg</p></div>}
                         </div>
                       </div>
