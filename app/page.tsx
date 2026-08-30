@@ -6,13 +6,11 @@ import {
   BriefcaseBusiness,
   CalendarDays,
   Check,
-  ChevronDown,
   CirclePlus,
   Cloud,
   CloudOff,
   Luggage,
   MapPin,
-  Minus,
   PackageCheck,
   PlaneTakeoff,
   Plus,
@@ -50,14 +48,9 @@ type PackingItem = {
   checked: boolean;
 };
 
-type BagType = "cabin" | "checked";
-
-type BaggageItem = {
+type BagMeasurement = {
   id: string;
-  label: string;
-  weight: number;
-  quantity: number;
-  bag: BagType;
+  combinedWeight: number;
 };
 
 type PlanState = {
@@ -66,9 +59,16 @@ type PlanState = {
   flights: Flight[];
   packing: PackingItem[];
   baggage: {
-    cabinAllowance: number;
     checkedAllowance: number;
-    items: BaggageItem[];
+    personWeight: number;
+    bags: BagMeasurement[];
+  };
+};
+
+type StoredPlan = Partial<Omit<PlanState, "baggage">> & {
+  baggage?: Partial<PlanState["baggage"]> & {
+    cabinAllowance?: number;
+    items?: unknown[];
   };
 };
 
@@ -123,11 +123,38 @@ const defaultState: PlanState = {
     checked: false,
   })),
   baggage: {
-    cabinAllowance: 7,
     checkedAllowance: 20,
-    items: [],
+    personWeight: 0,
+    bags: [{ id: "starter-bag-1", combinedWeight: 0 }],
   },
 };
+
+function toNonNegativeNumber(value: unknown, fallback = 0) {
+  const number = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(number) && number >= 0 ? number : fallback;
+}
+
+function normalizePlan(data: StoredPlan): PlanState {
+  const savedBags: unknown[] = Array.isArray(data.baggage?.bags) ? data.baggage.bags : [];
+  const bags = savedBags
+    .filter((bag): bag is Record<string, unknown> => Boolean(bag) && typeof bag === "object")
+    .map((bag) => ({
+      id: typeof bag.id === "string" ? bag.id : makeId(),
+      combinedWeight: toNonNegativeNumber(bag.combinedWeight),
+    }));
+
+  return {
+    tripName: typeof data.tripName === "string" ? data.tripName : defaultState.tripName,
+    traveler: typeof data.traveler === "string" ? data.traveler : defaultState.traveler,
+    flights: Array.isArray(data.flights) ? data.flights : defaultState.flights,
+    packing: Array.isArray(data.packing) ? data.packing : defaultState.packing,
+    baggage: {
+      checkedAllowance: toNonNegativeNumber(data.baggage?.checkedAllowance, defaultState.baggage.checkedAllowance),
+      personWeight: toNonNegativeNumber(data.baggage?.personWeight),
+      bags: bags.length ? bags : [{ id: makeId(), combinedWeight: 0 }],
+    },
+  };
+}
 
 const fieldClass =
   "h-11 rounded-2xl border-[#cdeafa] bg-white/95 text-[#153454] shadow-[0_4px_14px_rgba(29,143,202,0.06)] placeholder:text-[#7ca5bd] focus-visible:border-[#45bce9] focus-visible:ring-[#9ce4fb]";
@@ -149,54 +176,12 @@ function Field({
   );
 }
 
-function WeightSummary({
-  title,
-  icon,
-  total,
-  allowance,
-  tone,
-}: {
-  title: string;
-  icon: React.ReactNode;
-  total: number;
-  allowance: number;
-  tone: "blue" | "coral";
-}) {
-  const remaining = allowance - total;
-  const percent = allowance > 0 ? Math.min((total / allowance) * 100, 100) : 0;
-  const over = remaining < 0;
-  const color = tone === "blue" ? "text-[#087fbd]" : "text-[#ed4f72]";
-
-  return (
-    <div className="rounded-3xl bg-white/90 p-4 shadow-[0_10px_28px_rgba(29,143,202,0.08)] ring-1 ring-[#d4eef9]">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <span className={`grid size-9 place-items-center rounded-2xl bg-white ${color}`}>{icon}</span>
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#6b91a7]">{title}</p>
-            <p className="mt-0.5 text-lg font-extrabold text-[#14365d]">
-              {total.toFixed(1)} <span className="text-xs font-bold text-[#7898aa]">/ {allowance || 0} kg</span>
-            </p>
-          </div>
-        </div>
-        <div className={`rounded-full px-3 py-1 text-xs font-extrabold ${over ? "bg-[#ffe1e8] text-[#d73f61]" : "bg-[#dcf7ff] text-[#0879a9]"}`}>
-          {over ? `${Math.abs(remaining).toFixed(1)} kg over` : `${remaining.toFixed(1)} kg left`}
-        </div>
-      </div>
-      <Progress value={percent} className={`mt-3 h-2 bg-[#e7f6fb] ${over ? "[&>div]:bg-[#ef5a78]" : "[&>div]:bg-[#22aede]"}`} />
-    </div>
-  );
-}
-
 export default function Home() {
   const [plan, setPlan] = useState<PlanState>(defaultState);
   const [loaded, setLoaded] = useState(false);
   const [saveState, setSaveState] = useState<"loading" | "saving" | "saved" | "offline">("loading");
   const [newPackingItem, setNewPackingItem] = useState("");
   const [newPackingCategory, setNewPackingCategory] = useState(categories[0]);
-  const [newBagItem, setNewBagItem] = useState("");
-  const [newBagWeight, setNewBagWeight] = useState(0);
-  const [newBagType, setNewBagType] = useState<BagType>("checked");
   const [clock, setClock] = useState(0);
 
   useEffect(() => {
@@ -206,8 +191,8 @@ export default function Home() {
       try {
         const response = await fetch("/api/state", { cache: "no-store", signal: controller.signal });
         if (!response.ok) throw new Error("Load failed");
-        const payload = (await response.json()) as { data: PlanState | null };
-        if (payload.data) setPlan(payload.data);
+        const payload = (await response.json()) as { data: StoredPlan | null };
+        if (payload.data) setPlan(normalizePlan(payload.data));
         setSaveState("saved");
       } catch (error) {
         if ((error as Error).name !== "AbortError") setSaveState("offline");
@@ -267,13 +252,15 @@ export default function Home() {
 
   const packedCount = plan.packing.filter((item) => item.checked).length;
   const packingPercent = plan.packing.length ? (packedCount / plan.packing.length) * 100 : 0;
-  const baggageTotals = plan.baggage.items.reduce(
-    (totals, item) => {
-      totals[item.bag] += Number(item.weight || 0) * Number(item.quantity || 0);
-      return totals;
-    },
-    { cabin: 0, checked: 0 }
+  const personWeight = toNonNegativeNumber(plan.baggage.personWeight);
+  const bagWeights = plan.baggage.bags.map((bag) =>
+    personWeight > 0 && bag.combinedWeight >= personWeight ? bag.combinedWeight - personWeight : 0
   );
+  const totalBagWeight = bagWeights.reduce((total, weight) => total + weight, 0);
+  const baggageRemaining = plan.baggage.checkedAllowance - totalBagWeight;
+  const baggagePercent = plan.baggage.checkedAllowance > 0
+    ? Math.min((totalBagWeight / plan.baggage.checkedAllowance) * 100, 100)
+    : 0;
 
   function updateFlight(id: string, patch: Partial<Flight>) {
     setPlan((current) => ({
@@ -292,18 +279,14 @@ export default function Home() {
     setNewPackingItem("");
   }
 
-  function addBaggageItem() {
-    const label = newBagItem.trim();
-    if (!label || newBagWeight <= 0) return;
+  function addBag() {
     setPlan((current) => ({
       ...current,
       baggage: {
         ...current.baggage,
-        items: [...current.baggage.items, { id: makeId(), label, weight: newBagWeight, quantity: 1, bag: newBagType }],
+        bags: [...current.baggage.bags, { id: makeId(), combinedWeight: 0 }],
       },
     }));
-    setNewBagItem("");
-    setNewBagWeight(0);
   }
 
   return (
@@ -432,53 +415,57 @@ export default function Home() {
             <TabsContent value="baggage" className="m-0 space-y-5">
               <section className="rounded-[2rem] bg-gradient-to-br from-[#f05272] via-[#ff6685] to-[#ff77a5] p-5 text-white shadow-xl shadow-pink-300/45 sm:p-7">
                 <div className="flex items-center justify-between gap-4">
-                  <div><p className="text-xs font-extrabold uppercase tracking-[0.18em] text-white/80">Baggage calculator</p><h2 className="mt-1 text-3xl font-black">Pack within limit</h2><p className="mt-1 text-sm font-semibold text-white/80">Add each item and we’ll total it for you.</p></div>
+                  <div><p className="text-xs font-extrabold uppercase tracking-[0.18em] text-white/80">Baggage calculator</p><h2 className="mt-1 text-3xl font-black">Weigh every bag</h2><p className="mt-1 text-sm font-semibold text-white/80">Use any body-weight scale—no luggage scale needed.</p></div>
                   <div className="grid size-16 place-items-center rounded-[1.6rem] bg-white/20 ring-1 ring-white/25"><Luggage className="size-8" /></div>
                 </div>
               </section>
 
               <section className="rounded-[2rem] bg-[#fff0f5] p-4 ring-1 ring-[#ffd4e0] sm:p-6">
-                <div className="grid grid-cols-2 gap-3">
-                  <Field label="Cabin allowance (kg)"><Input type="number" min="0" step="0.1" value={plan.baggage.cabinAllowance} onChange={(event) => setPlan((current) => ({ ...current, baggage: { ...current.baggage, cabinAllowance: Number(event.target.value) } }))} className={fieldClass} /></Field>
-                  <Field label="Checked allowance (kg)"><Input type="number" min="0" step="0.1" value={plan.baggage.checkedAllowance} onChange={(event) => setPlan((current) => ({ ...current, baggage: { ...current.baggage, checkedAllowance: Number(event.target.value) } }))} className={fieldClass} /></Field>
+                <div>
+                  <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-[#e24e72]">Step 1</p>
+                  <h2 className="mt-1 text-xl font-black text-[#102f58]">Weigh yourself first</h2>
+                  <p className="mt-1 text-sm font-semibold leading-5 text-[#6c8ba0]">Stand on the scale without a bag and enter your weight.</p>
                 </div>
-                <div className="mt-4 grid gap-3">
-                  <WeightSummary title="Cabin bag" icon={<BriefcaseBusiness className="size-5" />} total={baggageTotals.cabin} allowance={plan.baggage.cabinAllowance} tone="blue" />
-                  <WeightSummary title="Checked bag" icon={<Luggage className="size-5" />} total={baggageTotals.checked} allowance={plan.baggage.checkedAllowance} tone="coral" />
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Your weight (kg)" className="mt-4"><Input type="number" inputMode="decimal" min="0" step="0.1" value={plan.baggage.personWeight || ""} onChange={(event) => setPlan((current) => ({ ...current, baggage: { ...current.baggage, personWeight: toNonNegativeNumber(event.target.value) } }))} placeholder="e.g. 70" className={fieldClass} /></Field>
+                  <Field label="Baggage allowance (kg)" className="mt-4"><Input type="number" inputMode="decimal" min="0" step="0.1" value={plan.baggage.checkedAllowance || ""} onChange={(event) => setPlan((current) => ({ ...current, baggage: { ...current.baggage, checkedAllowance: toNonNegativeNumber(event.target.value) } }))} placeholder="e.g. 20" className={fieldClass} /></Field>
                 </div>
               </section>
 
               <section className="rounded-[2rem] bg-[#edf8ff] p-4 ring-1 ring-[#c7eafa] sm:p-6">
-                <div className="flex items-center justify-between">
-                  <div><p className="text-xs font-extrabold uppercase tracking-[0.16em] text-[#1397d0]">Weight list</p><h2 className="mt-1 text-xl font-black text-[#102f58]">What is in your bags?</h2></div>
-                  <span className="rounded-full bg-white px-3 py-1 text-xs font-extrabold text-[#0b79b2]">{plan.baggage.items.length} items</span>
+                <div className="flex items-start justify-between gap-3">
+                  <div><p className="text-xs font-extrabold uppercase tracking-[0.16em] text-[#1397d0]">Step 2</p><h2 className="mt-1 text-xl font-black text-[#102f58]">Hold each bag on the scale</h2><p className="mt-1 text-sm font-semibold leading-5 text-[#6c8ba0]">Enter the weight shown while you are holding the bag.</p></div>
+                  <span className="shrink-0 rounded-full bg-white px-3 py-1 text-xs font-extrabold text-[#0b79b2]">{plan.baggage.bags.length} {plan.baggage.bags.length === 1 ? "bag" : "bags"}</span>
                 </div>
-                <div className="mt-4 space-y-2">
-                  {plan.baggage.items.length === 0 ? (
-                    <div className="rounded-2xl border border-dashed border-[#83d2ef] bg-white/65 px-5 py-8 text-center"><Luggage className="mx-auto size-7 text-[#55bbe0]" /><p className="mt-2 text-sm font-bold text-[#63849a]">Add your first item below</p></div>
-                  ) : plan.baggage.items.map((item) => (
-                    <div key={item.id} className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-2xl bg-white/90 p-3 ring-1 ring-[#d8f0f9] sm:grid-cols-[1fr_118px_118px_auto]">
-                      <div className="min-w-0"><p className="truncate text-sm font-extrabold text-[#153454]">{item.label}</p><button type="button" className="mt-1 flex items-center gap-1 text-xs font-bold text-[#118dc5]" onClick={() => setPlan((current) => ({ ...current, baggage: { ...current.baggage, items: current.baggage.items.map((bagItem) => bagItem.id === item.id ? { ...bagItem, bag: bagItem.bag === "cabin" ? "checked" : "cabin" } : bagItem) } }))}>{item.bag === "cabin" ? "Cabin bag" : "Checked bag"} <ChevronDown className="size-3" /></button></div>
-                      <div className="flex items-center justify-end gap-1 sm:order-4"><Button type="button" variant="ghost" size="icon" aria-label={`Remove ${item.label}`} className="size-9 rounded-xl text-[#82a3b6] hover:bg-[#ffe7ed] hover:text-[#e54868]" onClick={() => setPlan((current) => ({ ...current, baggage: { ...current.baggage, items: current.baggage.items.filter((bagItem) => bagItem.id !== item.id) } }))}><Trash2 className="size-4" /></Button></div>
-                      <div className="flex items-center justify-between rounded-xl bg-[#e4f7ff] px-2 py-1.5 text-[#16496c]">
-                        <Button type="button" variant="ghost" size="icon" aria-label={`Decrease ${item.label} quantity`} className="size-7 rounded-lg" onClick={() => setPlan((current) => ({ ...current, baggage: { ...current.baggage, items: current.baggage.items.map((bagItem) => bagItem.id === item.id ? { ...bagItem, quantity: Math.max(1, bagItem.quantity - 1) } : bagItem) } }))}><Minus className="size-3" /></Button>
-                        <span className="text-xs font-black">× {item.quantity}</span>
-                        <Button type="button" variant="ghost" size="icon" aria-label={`Increase ${item.label} quantity`} className="size-7 rounded-lg" onClick={() => setPlan((current) => ({ ...current, baggage: { ...current.baggage, items: current.baggage.items.map((bagItem) => bagItem.id === item.id ? { ...bagItem, quantity: bagItem.quantity + 1 } : bagItem) } }))}><Plus className="size-3" /></Button>
+                <div className="mt-4 space-y-3">
+                  {plan.baggage.bags.map((bag, index) => {
+                    const bagWeight = bagWeights[index];
+                    const hasCombinedWeight = bag.combinedWeight > 0;
+                    const invalidWeight = personWeight > 0 && hasCombinedWeight && bag.combinedWeight < personWeight;
+                    return (
+                      <div key={bag.id} className="rounded-3xl bg-white/90 p-4 shadow-[0_8px_24px_rgba(29,143,202,0.08)] ring-1 ring-[#d8f0f9]">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2.5"><span className="grid size-9 place-items-center rounded-2xl bg-[#0d3a70] text-sm font-black text-white">{index + 1}</span><div><p className="text-xs font-extrabold uppercase tracking-[0.14em] text-[#1397d0]">Bag {index + 1}</p><p className="text-sm font-black text-[#153454]">You + Bag {index + 1}</p></div></div>
+                          {plan.baggage.bags.length > 1 && <Button type="button" variant="ghost" size="icon" aria-label={`Remove Bag ${index + 1}`} className="size-9 rounded-xl text-[#82a3b6] hover:bg-[#ffe7ed] hover:text-[#e54868]" onClick={() => setPlan((current) => ({ ...current, baggage: { ...current.baggage, bags: current.baggage.bags.filter((item) => item.id !== bag.id) } }))}><Trash2 className="size-4" /></Button>}
+                        </div>
+                        <Field label={`Scale reading with Bag ${index + 1} (kg)`} className="mt-4"><Input type="number" inputMode="decimal" min="0" step="0.1" value={bag.combinedWeight || ""} onChange={(event) => setPlan((current) => ({ ...current, baggage: { ...current.baggage, bags: current.baggage.bags.map((item) => item.id === bag.id ? { ...item, combinedWeight: toNonNegativeNumber(event.target.value) } : item) } }))} placeholder="e.g. 82.5" className={fieldClass} /></Field>
+                        <div className={`mt-3 rounded-2xl px-3 py-2.5 ${invalidWeight ? "bg-[#ffe5ec] text-[#d94163]" : "bg-[#e2f7ff] text-[#0b76a9]"}`}>
+                          {!personWeight ? <p className="text-xs font-bold">Enter your weight in Step 1 first.</p> : !hasCombinedWeight ? <p className="text-xs font-bold">Now weigh yourself while holding Bag {index + 1}.</p> : invalidWeight ? <p className="text-xs font-bold">This must be at least your body weight.</p> : <div className="flex items-center justify-between gap-3"><p className="text-xs font-bold">{bag.combinedWeight.toFixed(1)} − {personWeight.toFixed(1)}</p><p className="text-sm font-black">Bag {index + 1}: {bagWeight.toFixed(1)} kg</p></div>}
+                        </div>
                       </div>
-                      <div className="rounded-xl bg-[#ffe7ee] px-3 py-2 text-center text-xs font-black text-[#df4668]">{(item.weight * item.quantity).toFixed(1)} kg</div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
+                <Button type="button" variant="outline" onClick={addBag} className="mt-4 h-11 w-full rounded-2xl border-dashed border-[#53bce5] bg-white/80 font-extrabold text-[#0b6fa8] hover:bg-[#e4f7ff]"><Plus className="size-4" /> Add another bag</Button>
               </section>
 
               <section className="rounded-[2rem] bg-[#fff5d8] p-4 ring-1 ring-[#ffe29a] sm:p-6">
-                <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-[#c97905]">Add baggage item</p>
-                <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_110px_130px_auto]">
-                  <Input value={newBagItem} onChange={(event) => setNewBagItem(event.target.value)} placeholder="e.g. Suitcase" className={fieldClass} />
-                  <Input type="number" min="0" step="0.1" value={newBagWeight || ""} onChange={(event) => setNewBagWeight(Number(event.target.value))} placeholder="kg" className={fieldClass} aria-label="Item weight in kilograms" />
-                  <NativeSelect value={newBagType} onChange={(event) => setNewBagType(event.target.value as BagType)} className="h-11 rounded-2xl border-[#ffe3a0] bg-white/90 font-semibold" aria-label="Bag type"><NativeSelectOption value="cabin">Cabin bag</NativeSelectOption><NativeSelectOption value="checked">Checked bag</NativeSelectOption></NativeSelect>
-                  <Button type="button" onClick={addBaggageItem} className="h-11 rounded-2xl bg-[#ff9e2f] font-extrabold text-white shadow-md shadow-orange-200 hover:bg-[#ef8c20]"><Plus /> Add</Button>
+                <div className="flex items-center justify-between gap-3">
+                  <div><p className="text-xs font-extrabold uppercase tracking-[0.16em] text-[#c97905]">Total baggage</p><p className="mt-1 text-3xl font-black text-[#102f58]">{totalBagWeight.toFixed(1)} <span className="text-base text-[#6c8ba0]">kg</span></p></div>
+                  <span className={`rounded-full px-3 py-1.5 text-xs font-extrabold ${baggageRemaining < 0 ? "bg-[#ffe1e8] text-[#d73f61]" : "bg-[#dcf7ff] text-[#0879a9]"}`}>{baggageRemaining < 0 ? `${Math.abs(baggageRemaining).toFixed(1)} kg over` : `${baggageRemaining.toFixed(1)} kg left`}</span>
                 </div>
+                <Progress value={baggagePercent} className={`mt-4 h-3 bg-white/70 ${baggageRemaining < 0 ? "[&>div]:bg-[#ef5a78]" : "[&>div]:bg-[#22aede]"}`} />
+                <p className="mt-2 text-xs font-bold text-[#8a7954]">Allowance: {plan.baggage.checkedAllowance.toFixed(1)} kg</p>
               </section>
             </TabsContent>
           </div>
