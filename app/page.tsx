@@ -532,6 +532,20 @@ export default function Home() {
                   <div><p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#71306c]">Total baggage</p><p className="mt-1 font-[Manrope] text-3xl font-extrabold tracking-[-0.8px] text-[#17344f]">{totalBagWeight.toFixed(1)} <span className="text-base text-[#5d6b79]">kg</span></p></div>
                   <span className={`rounded-full px-3 py-1.5 text-xs font-bold ${baggageRemaining < 0 ? "bg-[#fce8f2] text-[#a62d57]" : "bg-white/80 text-[#086553]"}`}>{baggageRemaining < 0 ? `${Math.abs(baggageRemaining).toFixed(1)} kg over` : `${baggageRemaining.toFixed(1)} kg left`}</span>
                 </div>
+                <div className="mt-4 flex items-center justify-between gap-3 rounded-[19px] border border-white/80 bg-white/55 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                  <div className="shrink-0"><p className="text-[10px] font-bold uppercase tracking-[0.13em] text-[#71306c]">Your bags</p><p className="mt-0.5 text-xs font-bold text-[#426f5e]">{plan.baggage.bags.length} in this total</p></div>
+                  <div className="bag-icon-parade" role="img" aria-label={`${plan.baggage.bags.length} ${plan.baggage.bags.length === 1 ? "bag" : "bags"} included in the total`}>
+                    {plan.baggage.bags.map((bag, index) => {
+                      const theme = bagThemes[index % bagThemes.length];
+                      return (
+                        <span key={bag.id} className={`bag-total-icon ${theme.badge}`} style={{ "--bag-index": index } as React.CSSProperties} title={bag.name.trim() || `Bag ${index + 1}`}>
+                          <Luggage className="size-5" />
+                          <span className={`absolute -right-1 -top-1 grid size-[18px] place-items-center rounded-full border-2 border-white bg-white font-[Manrope] text-[9px] font-extrabold ${theme.accent}`}>{index + 1}</span>
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
                 <Progress value={baggagePercent} className={`mt-4 h-3 bg-white/80 ${baggageRemaining < 0 ? "[&>div]:bg-[#a62d57]" : "[&>div]:bg-[#117d67]"}`} />
                 <p className="mt-2 text-xs font-bold text-[#426f5e]">Allowance: {plan.baggage.checkedAllowance.toFixed(1)} kg</p>
               </section>
