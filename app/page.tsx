@@ -13,6 +13,7 @@ import {
   MapPin,
   PackageCheck,
   PencilLine,
+  PersonStanding,
   PlaneTakeoff,
   Plus,
   RotateCcw,
@@ -221,6 +222,16 @@ function Field({
       <span>{label}</span>
       {children}
     </label>
+  );
+}
+
+function WeighingScene({ withBag, label }: { withBag: boolean; label: string }) {
+  return (
+    <div className={`weighing-scene ${withBag ? "with-bag" : "person-only"}`} role="img" aria-label={label}>
+      <PersonStanding aria-hidden="true" className="scene-person" />
+      {withBag && <Luggage aria-hidden="true" className="scene-luggage" />}
+      <span aria-hidden="true" className="scene-scale"><span /></span>
+    </div>
   );
 }
 
@@ -479,10 +490,13 @@ export default function Home() {
               </section>
 
               <section className="rounded-[24px] border border-[#edc9da] bg-[#fff7fb] p-4 shadow-[0_10px_26px_rgba(40,91,78,0.05)] sm:p-5">
-                <div>
-                  <p className="eyebrow">Step 1</p>
-                  <h2 className="font-[Manrope] text-xl font-extrabold tracking-[-0.5px] text-[#17344f]">Weigh yourself first</h2>
-                  <p className="mt-1 text-xs font-semibold leading-5 text-[#5d6b79]">Stand on the scale without a bag and enter your weight.</p>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="eyebrow">Step 1</p>
+                    <h2 className="font-[Manrope] text-xl font-extrabold tracking-[-0.5px] text-[#17344f]">Weigh yourself first</h2>
+                    <p className="mt-1 text-xs font-semibold leading-5 text-[#5d6b79]">Stand on the scale without a bag and enter your weight.</p>
+                  </div>
+                  <WeighingScene withBag={false} label="Animated person standing alone on a body-weight scale" />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <Field label="Your weight (kg)" className="mt-4"><Input type="number" inputMode="decimal" min="0" step="0.1" value={plan.baggage.personWeight || ""} onChange={(event) => setPlan((current) => ({ ...current, baggage: { ...current.baggage, personWeight: toNonNegativeNumber(event.target.value) } }))} placeholder="e.g. 70" className={fieldClass} /></Field>
@@ -492,8 +506,11 @@ export default function Home() {
 
               <section className={surfaceClass}>
                 <div className="flex items-start justify-between gap-3">
-                  <div><p className="eyebrow">Step 2</p><h2 className="font-[Manrope] text-xl font-extrabold tracking-[-0.5px] text-[#17344f]">Hold each bag on the scale</h2><p className="mt-1 text-xs font-semibold leading-5 text-[#5d6b79]">Enter the weight shown while you are holding the bag.</p></div>
-                  <span className="shrink-0 rounded-full border border-white bg-[#fce8f2] px-3 py-1.5 text-xs font-bold text-[#71306c]">{plan.baggage.bags.length} {plan.baggage.bags.length === 1 ? "bag" : "bags"}</span>
+                  <div className="min-w-0"><p className="eyebrow">Step 2</p><h2 className="font-[Manrope] text-xl font-extrabold tracking-[-0.5px] text-[#17344f]">Hold each bag on the scale</h2><p className="mt-1 text-xs font-semibold leading-5 text-[#5d6b79]">Enter the weight shown while you are holding the bag.</p></div>
+                  <div className="grid shrink-0 justify-items-end gap-2">
+                    <span className="rounded-full border border-white bg-[#fce8f2] px-3 py-1.5 text-xs font-bold text-[#71306c]">{plan.baggage.bags.length} {plan.baggage.bags.length === 1 ? "bag" : "bags"}</span>
+                    <WeighingScene withBag label="Animated person holding a luggage bag while standing on a body-weight scale" />
+                  </div>
                 </div>
                 <div className="mt-4 space-y-3">
                   {plan.baggage.bags.map((bag, index) => {
