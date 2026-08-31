@@ -118,11 +118,17 @@ button,
 input,
 textarea,
 select {
-  font: inherit;
+  font-family: inherit;
+}
+
+button,
+input,
+textarea,
+select {
+  touch-action: manipulation;
 }
 
 button {
-  touch-action: manipulation;
   transition: background-color 0.18s ease, box-shadow 0.18s ease, color 0.18s ease;
 }
 
@@ -283,6 +289,15 @@ select:focus-visible {
   .bottom-nav button:not(.active):hover {
     background: #e7d5f6;
     color: #71306c;
+  }
+}
+
+/* iOS Safari zooms the page when a focused form control is smaller than 16px. */
+@media (max-width: 699px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px;
   }
 }
 
